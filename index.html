@@ -311,6 +311,8 @@ img { max-width: 100%; }
 .board li.top2 .b-rank { color: #d9d6e3; }
 .board li.top3 .b-rank { color: #e0a070; }
 .board li.me { background: var(--rock-2); outline: 3px solid var(--amethyst); outline-offset: -3px; border-radius: 4px; }
+.statbtn { cursor: pointer; font: inherit; color: var(--fg); text-align: left; }
+.statbtn:hover { background: var(--rock-2); }
 .codebox { font-family: ui-monospace, Menlo, monospace; font-size: 1rem; background: var(--well); border: 3px solid var(--edge); border-radius: 4px; padding: 12px 14px; overflow-wrap: anywhere; user-select: all; }
 </style>
 </head>
@@ -1127,6 +1129,7 @@ img { max-width: 100%; }
     <span class="stat">${gemSVG('#b58cff', true, 26)}<b>${p.crystals}</b><small>kristaller</small></span>
     <span class="stat">${tileSVG('fackla', 26)}<b>${streak}</b><small>${streak === 1 ? 'dag' : 'dagar'} i rad</small></span>
     <span class="stat">${iceSVG(22)}<b>${p.streak.freezes}</b><small>frysblock</small></span>
+    ${ctx.publicMode ? `<button class="stat statbtn" data-act="board">${tileSVG('diamant', 26)}<b>Topplista</b><small>se alla spelare</small></button>` : ''}
   </div>
 </header>
 <section class="panel dayrow">
@@ -1714,6 +1717,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
     <p class="eyebrow">Ett mattespel för åk 3–6</p>
     <h1>Kristallgruvan</h1>
     <p class="lead">Mossa sover djupt nere i gruvan. Lös matteuppdrag, samla kristaller, kläck egna varelser och bygg din bas. Klättra på topplistan!</p>
+    <div><button class="btn ghost" data-act="board">Se topplistan</button></div>
   </div>
 </header>
 ${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
@@ -1773,8 +1777,9 @@ ${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
   /* ---------- topplista ---------- */
   async function showBoard() {
     const tabs = [['week', 'Veckans poäng'], ['race', 'Vagnrace'], ['total', 'All-time']];
+    const back = game.getPlayer() ? '<button class="link" data-g="hub">Tillbaka</button>' : '<button class="link" data-act="start">Tillbaka</button>';
     view(`
-<header class="subhead"><button class="link" data-g="hub">Tillbaka</button><h2>Topplista</h2></header>
+<header class="subhead">${back}<h2>Topplista</h2></header>
 <div class="chips">${tabs.map(([id, n]) => `<button class="chip${boardKind === id ? ' on' : ''}" data-act="btab" data-id="${id}">${n}</button>`).join('')}</div>
 <section class="panel"><p class="muted">Hämtar…</p></section>`);
     const p = game.getPlayer();
@@ -1786,7 +1791,7 @@ ${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
       : !rows.length ? '<p class="muted">Ingen har poäng här än. Bli först!</p>'
       : `<ol class="board">${rows.map((r) => `<li class="${r.me ? 'me' : ''}${r.rank <= 3 ? ' top' + r.rank : ''}"><span class="b-rank">${r.rank}</span><span class="b-name">${esc(r.name)}${r.me ? ' <small>(du)</small>' : ''}</span><span class="b-score">${r.score}</span></li>`).join('')}</ol>`;
     view(`
-<header class="subhead"><button class="link" data-g="hub">Tillbaka</button><h2>Topplista</h2></header>
+<header class="subhead">${back}<h2>Topplista</h2></header>
 <div class="chips">${tabs.map(([id, n]) => `<button class="chip${boardKind === id ? ' on' : ''}" data-act="btab" data-id="${id}">${n}</button>`).join('')}</div>
 <section class="panel">${body}<p class="muted small">${note}${store.mode === 'online' ? '' : ' Topplistan visar bara spelare på den här enheten.'}</p></section>`);
   }
