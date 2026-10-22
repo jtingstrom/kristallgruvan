@@ -276,7 +276,11 @@ table.ans tr.miss .mark { color: var(--soft); font-weight: 800; }
 .shopitem:last-child { border-bottom: 0; }
 .btn.sm { font-size: .95rem; padding: 6px 12px; box-shadow: inset 0 -3px 0 var(--moss-d), 0 3px 0 var(--edge); }
 .btn.sm.ghost { box-shadow: inset 0 -3px 0 var(--rock-2), 0 3px 0 var(--edge); }
-.btn:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.6); }
+.btn:disabled { cursor: not-allowed; background: var(--rock-3); color: var(--muted); box-shadow: inset 0 -3px 0 var(--rock-2), 0 3px 0 var(--edge); filter: none; }
+.buyrow { display: flex; gap: 8px; }
+.btn.buy { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; line-height: 1.1; }
+.btn.buy small { display: inline-flex; align-items: center; gap: 3px; font-family: var(--f-body); font-weight: 800; font-size: .8rem; }
+.btn.buy small svg { display: inline-block; }
 .reqs, .rlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rlist li, .reqs li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--rock-3); }
 .lvcell { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -1404,9 +1408,11 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
       const tabs = [['block', 'Block'], ['extra', 'Extra']].concat(ctx.publicMode ? [] : [['riktiga', 'Riktiga belöningar']]);
       let body = '';
       if (shopTab === 'block') {
-        body = `<div class="shoplist">${E.BLOCKS.map((b) => `<div class="shopitem">${tileSVG(b.id, 36)}<div class="grow"><p><b>${esc(b.name)}</b></p><p class="muted small">${b.cost} st · du har ${p.inventory[b.id] || 0}</p></div>
-          <button class="btn sm" data-g="buy" data-id="${b.id}" data-n="1" ${p.crystals < b.cost ? 'disabled' : ''}>+1</button>
-          <button class="btn sm" data-g="buy" data-id="${b.id}" data-n="5" ${p.crystals < b.cost * 5 ? 'disabled' : ''}>+5</button></div>`).join('')}</div>`;
+        body = `<div class="shoplist">${E.BLOCKS.map((b) => `<div class="shopitem">${tileSVG(b.id, 36)}<div class="grow"><p><b>${esc(b.name)}</b></p><p class="muted small">${b.cost} ${b.cost === 1 ? 'kristall' : 'kristaller'} styck · du har ${p.inventory[b.id] || 0}</p></div>
+          <div class="buyrow">
+            <button class="btn sm buy" data-g="buy" data-id="${b.id}" data-n="1" ${p.crystals < b.cost ? 'disabled' : ''} aria-label="Köp 1 ${esc(b.name)} för ${b.cost} kristaller">Köp 1<small>${gemSVG('#b58cff', true, 14)}${b.cost}</small></button>
+            <button class="btn sm buy" data-g="buy" data-id="${b.id}" data-n="5" ${p.crystals < b.cost * 5 ? 'disabled' : ''} aria-label="Köp 5 ${esc(b.name)} för ${b.cost * 5} kristaller">Köp 5<small>${gemSVG('#b58cff', true, 14)}${b.cost * 5}</small></button>
+          </div></div>`).join('')}</div>`;
       } else if (shopTab === 'extra') {
         body = `<div class="shoplist">
           <div class="shopitem">${iceSVG(36)}<div class="grow"><p><b>Frysblock</b></p><p class="muted small">Skyddar din svit en dag du inte hinner spela. Du har ${p.streak.freezes} av ${E.MAX_FREEZES}.</p></div><button class="btn sm" data-g="buyfreeze" ${p.crystals < E.FREEZE_COST || p.streak.freezes >= E.MAX_FREEZES ? 'disabled' : ''}>${E.FREEZE_COST}</button></div>
