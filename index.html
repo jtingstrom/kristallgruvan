@@ -313,13 +313,32 @@ img { max-width: 100%; }
 .board li.me { background: var(--rock-2); outline: 3px solid var(--amethyst); outline-offset: -3px; border-radius: 4px; }
 .statbtn { cursor: pointer; font: inherit; color: var(--fg); text-align: left; }
 .statbtn:hover { background: var(--rock-2); }
+.errtxt { color: var(--soft); font-weight: 700; }
+.okmsg { color: var(--moss); font-weight: 700; }
+.check { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); }
+.check input { width: 18px; height: 18px; accent-color: var(--moss); }
+.foot a.link { color: var(--muted); }
+.filters { flex-direction: row; flex-wrap: wrap; gap: 16px; padding-block: 14px; }
+.hbars { display: flex; flex-direction: column; gap: 10px; }
+.hbar { display: grid; grid-template-columns: minmax(8em, 13em) 1fr 3.6em; grid-template-rows: auto auto; column-gap: 12px; align-items: center; border-radius: 4px; padding: 2px 4px; }
+.hbar:hover, .hbar:focus { background: var(--rock-2); outline: none; }
+.hb-l { font-weight: 700; font-size: .92rem; min-width: 0; }
+.hb-track { height: 16px; background: transparent; border-radius: 0 4px 4px 0; }
+.hb-fill { display: block; height: 100%; background: var(--amethyst); border-radius: 0 4px 4px 0; }
+.hb-v { font-family: var(--f-display); text-align: right; font-variant-numeric: tabular-nums; }
+.hbar.few .hb-fill { opacity: .45; }
+.hb-n { grid-column: 2 / 4; font-size: .75rem; color: var(--muted); }
+details.skill summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.sk-p { margin-left: auto; font-family: var(--f-display); color: var(--gold); }
+.sk-n { min-width: 5.5em; text-align: right; }
+@media (max-width: 520px) { .hbar { grid-template-columns: 1fr 3.4em; } .hb-l { grid-column: 1 / 3; } .hb-track { grid-column: 1; } .hb-n { grid-column: 1 / 3; } }
 .codebox { font-family: ui-monospace, Menlo, monospace; font-size: 1rem; background: var(--well); border: 3px solid var(--edge); border-radius: 4px; padding: 12px 14px; overflow-wrap: anywhere; user-select: all; }
 </style>
 </head>
 <body>
 <main id="app"></main>
 <div id="toast" class="toast" role="status" aria-live="assertive"></div>
-<noscript><p style="padding:16px">Spelet behöver JavaScript.</p></noscript>
+<noscript><p style="padding:16px">Sidan behöver JavaScript.</p></noscript>
 <script src="config.js"></script>
 <script>
 /* =====================================================================
@@ -1104,7 +1123,7 @@ img { max-width: 100%; }
     async function open(k, testSession) {
       kid = k;
       let p = null;
-      try { p = await ctx.store.getPlayer(k.id); } catch (e) { p = null; }
+      try { p = await ctx.store.getPlayer(k.id); } catch (e) { if (e && e.code === 'not_logged_in') return; p = null; }
       if (!p) { p = E.newPlayer(k, testSession); player = p; await save(); }
       player = p;
       E.ensureToday(player);
@@ -1159,8 +1178,8 @@ ${pending.length ? `<section class="panel note"><p><b>Väntar på en vuxen:</b> 
   <button class="nav" data-g="medals">${medalSVG(true, 34)}<span>Medaljer</span><small>${Object.keys(p.medals).length}/${E.MEDALS.length}</small></button>
 </nav>
 <footer class="foot">
-  <button class="link" data-act="home">Byt spelare</button>
-  ${ctx.publicMode ? '<button class="link" data-act="code">Min spelkod</button>' : '<button class="link" data-g="test">Kartläggning</button>'}
+  <button class="link" data-act="home">${ctx.publicMode ? 'Logga ut' : 'Byt spelare'}</button>
+  ${ctx.publicMode ? '<button class="link" data-act="code">Mitt konto</button>' : '<button class="link" data-g="test">Kartläggning</button>'}
 </footer>`);
     }
 
@@ -1222,6 +1241,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
       R.combo = ok ? R.combo + 1 : 0;
       const ev = E.recordAnswer(player, q, ok, Date.now() - R.shownAt, { combo: R.combo });
       if (ok && ctx.onPoints) ctx.onPoints(player, q.level * 10 + (R.combo >= 3 ? 5 : 0));
+      if (ctx.onAnswer) ctx.onAnswer(q, ok, dunno ? '(vet inte)' : q.kind === 'choice' ? Q.plain(q.choices[Number(raw)]) : String(raw).trim());
       R.results.push(ok); R.earned += ev.crystals;
       if (ev.levelChange) { R.levels.push(ev.levelChange); if (ev.levelChange.to > ev.levelChange.from) toast(`<b>Ny nivå!</b> ${esc(areaName(ev.levelChange.area))}: ${esc(Q.LEVEL_LABELS[ev.levelChange.to])}`, 'good'); }
       if (ev.hatched) R.hatched.push(ev.hatched);
@@ -1302,6 +1322,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
         const ok = Q.check(R.q, v);
         const ev = E.recordAnswer(player, R.q, ok, Date.now() - R.shownAt, { race: true });
         if (ok) { R.count++; R.earned += ev.crystals; if (ctx.onPoints) ctx.onPoints(player, 5); } else R.wrong++;
+        if (ctx.onAnswer) ctx.onAnswer(R.q, ok, String(v).trim());
         if (ev.hatched) R.hatched.push(ev.hatched); ev.evolved.forEach((x) => R.evolved.push(x));
         if (ev.levelChange) R.levels.push(ev.levelChange);
         if (Date.now() >= R.end) return endRace();
@@ -1536,16 +1557,32 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
 </script>
 <script>
 /* =====================================================================
-   KRISTALLGRUVAN PUBLIK – LAGRING
-   Online: Supabase (se supabase.sql). Allt sparas också i webbläsaren,
-   så spelet fungerar även om servern inte svarar för stunden.
-   Utan inställningar i config.js körs spelet helt lokalt.
+   KRISTALLGRUVAN PUBLIK – LAGRING (version 2: inloggning med lösenord)
+   Online: Supabase (se supabase.sql). Spelets framsteg speglas också i
+   webbläsaren, så spelet fungerar även om servern inte svarar en stund.
+   Utan inställningar i config.js körs spelet helt lokalt (utan lösenord).
    ===================================================================== */
 (function (root) {
   'use strict';
   const KEY = 'kristallgruvan.public.v1';
+  const SKEY = 'kristallgruvan.session';
   const clone = (x) => JSON.parse(JSON.stringify(x));
   const E = () => root.KGEngine;
+  const ERR = {
+    name_taken: 'Det smeknamnet är redan upptaget. Välj ett annat.',
+    invalid_name: 'Välj ett annat smeknamn.',
+    weak_password: 'Lösenordet ska ha minst 4 tecken.',
+    wrong_login: 'Fel smeknamn eller lösenord.',
+    locked: 'För många försök. Vänta 10 minuter och försök igen.',
+    not_logged_in: 'Du har blivit utloggad. Logga in igen.',
+    already_has_password: 'Den här spelaren har redan ett lösenord. Logga in med det.',
+    not_found: 'Hittade ingen spelare.',
+  };
+  function errCode(e) {
+    const t = String((e && (e.body || e.message)) || '');
+    const k = Object.keys(ERR).find((c) => t.indexOf(c) >= 0);
+    return k || (e && e.status ? 'server' : 'offline');
+  }
 
   class PublicStore {
     constructor(cfg) {
@@ -1553,76 +1590,139 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
       this.url = String(cfg.supabaseUrl || '').trim().replace(/\/+$/, '');
       this.key = String(cfg.supabaseAnonKey || '').trim();
       this.mode = this.url && this.key ? 'online' : 'local';
-      this.profile = null;
+      this.profile = null; // { id, name, grade, token }
       this.q = Promise.resolve();
       this.status = 'ok';
       this.onStatus = null;
+      this.onLoggedOut = null;
+      this.answers = [];
     }
-    /* ---- lokal spegel ---- */
+    static message(code) { return ERR[code] || 'Kunde inte nå servern. Försök igen om en stund.'; }
+
+    /* ---- lokal lagring ---- */
     _get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return this._mem || {}; } }
     _set(m) { this._mem = m; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) { /* bara i minnet */ } }
-    profiles() { return Object.values(this._get().profiles || {}).sort((a, b) => String(b.last || '').localeCompare(String(a.last || ''))); }
-    saveProfile(p) { const m = this._get(); m.profiles = m.profiles || {}; m.profiles[p.id] = Object.assign({}, m.profiles[p.id], p, { last: new Date().toISOString() }); this._set(m); }
     _mirror(p) { const m = this._get(); m.players = m.players || {}; m.players[p.kidId] = clone(p); this._set(m); }
     _forget(id) { const m = this._get(); if (m.players) delete m.players[id]; if (m.profiles) delete m.profiles[id]; this._set(m); }
+    // spelare från version 1 (spelkod utan lösenord) som finns i den här webbläsaren
+    legacyProfiles() { const m = this._get(); return Object.values(m.profiles || {}).filter((p) => !p.migrated); }
+    markMigrated(id) { const m = this._get(); if (m.profiles && m.profiles[id]) { m.profiles[id].migrated = true; this._set(m); } }
+    localProfiles() { return Object.values(this._get().profiles || {}); }
+    saveLocalProfile(p) { const m = this._get(); m.profiles = m.profiles || {}; m.profiles[p.id] = Object.assign({}, m.profiles[p.id], { id: p.id, name: p.name, grade: p.grade, migrated: true }); this._set(m); }
+    // inloggning: kom-ihåg i localStorage, annars bara för fliken (sessionStorage)
+    rememberSession(prof, remember) {
+      const s = JSON.stringify(prof);
+      try { sessionStorage.setItem(SKEY, s); } catch (e) { /* */ }
+      try { if (remember) localStorage.setItem(SKEY, s); else localStorage.removeItem(SKEY); } catch (e) { /* */ }
+    }
+    savedSession() {
+      for (const st of [() => sessionStorage, () => localStorage]) {
+        try { const v = st().getItem(SKEY); if (v) return JSON.parse(v); } catch (e) { /* */ }
+      }
+      return null;
+    }
+    clearSession() { try { sessionStorage.removeItem(SKEY); } catch (e) { /* */ } try { localStorage.removeItem(SKEY); } catch (e) { /* */ } }
     setStatus(s) { if (s !== this.status) { this.status = s; if (this.onStatus) this.onStatus(s); } }
 
     /* ---- Supabase ---- */
     async rpc(fn, body) {
       const h = { apikey: this.key, 'Content-Type': 'application/json' };
-      if (/^eyJ/.test(this.key)) h.Authorization = 'Bearer ' + this.key; // äldre "anon"-nyckel
-      const r = await fetch(this.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(body) });
+      if (/^eyJ/.test(this.key)) h.Authorization = 'Bearer ' + this.key;
+      let r;
+      try { r = await fetch(this.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(body) }); }
+      catch (e) { const x = new Error('offline'); throw x; }
       const txt = await r.text();
       if (!r.ok) { const e = new Error(txt); e.status = r.status; e.body = txt; throw e; }
       return txt ? JSON.parse(txt) : null;
     }
+    async _call(fn, body) {
+      try { return await this.rpc(fn, body); }
+      catch (e) { const c = errCode(e); const x = new Error(c); x.code = c; throw x; }
+    }
+
+    /* ---- konto ---- */
+    async register(name, password, grade) {
+      if (this.mode !== 'online') return { id: (root.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()), name, grade, token: null };
+      const rows = await this._call('register_player', { p_name: name, p_password: password, p_grade: grade });
+      return { id: rows[0].r_id, name, grade, token: rows[0].r_token };
+    }
+    async login(name, password) {
+      if (this.mode !== 'online') {
+        const p = this.localProfiles().find((x) => x.name.toLowerCase() === name.toLowerCase());
+        if (!p) { const x = new Error('wrong_login'); x.code = 'wrong_login'; throw x; }
+        return { id: p.id, name: p.name, grade: p.grade, token: null };
+      }
+      const rows = await this._call('login_player', { p_name: name, p_password: password });
+      const r = rows && rows[0];
+      if (!r || r.r_error) { const x = new Error(r ? r.r_error : 'wrong_login'); x.code = r ? r.r_error : 'wrong_login'; throw x; }
+      return { id: r.r_id, name: r.r_name, grade: r.r_grade, token: r.r_token };
+    }
+    async claim(id, password) {
+      const rows = await this._call('claim_player', { p_id: id, p_password: password });
+      return { id, name: rows[0].r_name, grade: rows[0].r_grade, token: rows[0].r_token };
+    }
+    async changePassword(oldp, newp) { await this._call('change_password', { p_token: this.profile.token, p_old: oldp, p_new: newp }); }
+    async logout() {
+      const t = this.profile && this.profile.token;
+      try { await this.q; } catch (e) { /* */ }
+      if (t && this.mode === 'online') { try { await this.rpc('logout_player', { p_token: t }); } catch (e) { /* */ } }
+      if (this.profile) { const m = this._get(); if (m.players) delete m.players[this.profile.id]; this._set(m); }
+      this.clearSession(); this.profile = null; this.answers = [];
+    }
+    async deletePlayer() {
+      if (this.mode === 'online') await this._call('delete_player', { p_token: this.profile.token });
+      this._forget(this.profile.id); this.clearSession(); this.profile = null;
+    }
+    _lostSession() { this.clearSession(); if (this.onLoggedOut) this.onLoggedOut(); }
 
     /* ---- gränssnitt som spelet använder ---- */
     async getPlayer(id) {
       const local = (this._get().players || {})[id] || null;
       if (this.mode !== 'online') return local ? clone(local) : null;
       try {
-        const rows = await this.rpc('load_player', { p_id: id });
+        const rows = await this.rpc('load_player', { p_token: this.profile.token });
         const row = rows && rows[0];
         if (!row) return local ? clone(local) : null;
         const server = row.r_state && row.r_state.kidId ? clone(row.r_state) : null;
         const best = !local || (server && (server.totalAnswered || 0) >= (local.totalAnswered || 0)) ? server || clone(local) : clone(local);
-        best.pts = { pending: (local && local.pts && local.pts.pending) || 0, week: row.r_week, total: row.r_total, race: row.r_race };
+        if (best) best.pts = { pending: (local && local.pts && local.pts.pending) || 0, week: row.r_week, total: row.r_total, race: row.r_race };
         this.setStatus('ok');
         return best;
-      } catch (e) { this.setStatus('offline'); return local ? clone(local) : null; }
+      } catch (e) {
+        if (errCode(e) === 'not_logged_in') { this._lostSession(); throw Object.assign(new Error('not_logged_in'), { code: 'not_logged_in' }); }
+        this.setStatus('offline'); return local ? clone(local) : null;
+      }
     }
-    // hämtar namn och årskurs för en spelkod (för att fortsätta på en annan enhet)
-    async lookup(id) {
-      if (this.mode !== 'online') { const p = (this._get().profiles || {})[id]; return p || null; }
-      const rows = await this.rpc('load_player', { p_id: id });
-      const row = rows && rows[0];
-      return row ? { id, name: row.r_name, grade: row.r_grade } : null;
-    }
+    // ett svar till den anonyma lärarstatistiken (skickas med nästa sparning)
+    addAnswer(a) { this.answers.push(a); if (this.answers.length > 200) this.answers.splice(0, this.answers.length - 200); }
     savePlayer(p) {
       p.pts = p.pts || { pending: 0, week: 0, total: 0, race: 0 };
       if (this.mode !== 'online') {
-        // lokalt läge: poängen räknas direkt på enheten
         const wk = E().weekKey();
         if (p.pts.weekKey !== wk) { p.pts.week = 0; p.pts.weekKey = wk; }
         p.pts.week += p.pts.pending; p.pts.total += p.pts.pending; p.pts.pending = 0; p.pts.race = p.raceBest || 0;
+        this.answers = [];
         this._mirror(p);
         return Promise.resolve();
       }
       this._mirror(p);
-      const profile = this.profile;
+      const prof = this.profile;
       this.q = this.q.then(async () => {
+        if (!prof || !prof.token || this.profile !== prof) return;
         const add = p.pts.pending || 0;
+        const ans = this.answers.slice(0, 40);
         const state = clone(p); delete state.pts;
         try {
-          const res = await this.rpc('save_player', { p_id: p.kidId, p_name: profile.name, p_grade: profile.grade, p_state: state, p_add_points: add, p_race_best: p.raceBest || 0 });
+          const res = await this.rpc('save_player', { p_token: prof.token, p_grade: prof.grade, p_state: state, p_add_points: add, p_race_best: p.raceBest || 0, p_answers: ans });
           const r = res && res[0];
           p.pts.pending = Math.max(0, (p.pts.pending || 0) - add);
+          this.answers.splice(0, ans.length);
           if (r) { p.pts.week = r.out_week; p.pts.total = r.out_total; p.pts.race = r.out_race; }
           this._mirror(p);
           this.setStatus('ok');
         } catch (e) {
-          this.setStatus(e.body && e.body.indexOf('invalid_name') >= 0 ? 'badname' : 'offline');
+          const c = errCode(e);
+          if (c === 'not_logged_in') this._lostSession(); else this.setStatus('offline');
         }
       });
       return this.q;
@@ -1640,12 +1740,8 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
         let rank = 0, last = null;
         return rows.map((r, i) => { if (r.score !== last) { rank = i + 1; last = r.score; } return Object.assign(r, { rank }); }).slice(0, 20);
       }
-      const rows = await this.rpc('get_leaderboard', { p_kind: kind, p_id: myId || null });
+      const rows = await this.rpc('get_leaderboard', { p_kind: kind, p_token: (this.profile && this.profile.token) || null });
       return (rows || []).map((r) => ({ rank: r.r_rank, name: r.r_name, score: r.r_score, me: r.r_me }));
-    }
-    async deletePlayer(id) {
-      if (this.mode === 'online') await this.rpc('delete_player', { p_id: id });
-      this._forget(id);
     }
     // används inte i den publika versionen
     async getFamily() { return null; }
@@ -1659,7 +1755,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
 </script>
 <script>
 /* =====================================================================
-   KRISTALLGRUVAN PUBLIK – START, SPELKOD OCH TOPPLISTA
+   KRISTALLGRUVAN PUBLIK – INLOGGNING, KONTO OCH TOPPLISTA
    Spelet självt finns i game.js (samma som i familjeversionen).
    ===================================================================== */
 (function () {
@@ -1705,11 +1801,63 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
     return null;
   }
 
-  /* ---------- start ---------- */
+  /* ---------- start och inloggning ---------- */
+  const online = () => store.mode === 'online';
+  const pwField = (id, label, auto) => `<label class="fld"><span>${label}</span><input id="${id}" type="password" minlength="${online() ? 4 : 0}" maxlength="64" ${online() ? 'required' : ''} autocomplete="${auto}"></label>`;
+  function errBox() { return '<p id="err" class="small errtxt" hidden></p>'; }
+  function showErr(msg) { const el = document.getElementById('err'); if (el) { el.textContent = msg; el.hidden = false; } }
+  function busyBtn(form, on) { const b = form.querySelector('button[type=submit]'); if (b) { b.disabled = on; } }
+
   function showStart(mode) {
     if (game) game.reset();
-    profile = null; confirmDelete = false;
-    const list = store.profiles();
+    confirmDelete = false;
+    const legacy = online() ? store.legacyProfiles() : [];
+    if (!mode && legacy.length) mode = 'claim';
+    if (!mode) mode = online() || store.localProfiles().length ? 'login' : 'new';
+    let panel = '';
+    if (mode === 'claim') {
+      const lp = legacy[0];
+      panel = `<section class="panel">
+  <h2>Välj ett lösenord, ${esc(lp.name)}</h2>
+  <p class="muted">Nu loggar man in med smeknamn och lösenord. Välj ett lösenord för <b>${esc(lp.name)}</b>, så finns allt du har samlat kvar.</p>
+  <form id="claimform" class="newkid" autocomplete="off" style="border:0;padding:0">
+    <div class="row">${pwField('pw1', 'Nytt lösenord', 'new-password')}${pwField('pw2', 'Skriv lösenordet igen', 'new-password')}<button class="btn" type="submit">Spara</button></div>
+    ${errBox()}
+  </form>
+  <button class="link" data-act="skipclaim" data-id="${esc(lp.id)}">Det här är inte jag</button>
+</section>`;
+    } else if (mode === 'login') {
+      panel = `<section class="panel">
+  <h2>Logga in</h2>
+  <form id="loginform" class="newkid" autocomplete="on" style="border:0;padding:0">
+    <div class="row">
+      <label class="fld"><span>Smeknamn</span><input id="lname" maxlength="16" required autocomplete="username" autofocus></label>
+      ${online() ? pwField('lpw', 'Lösenord', 'current-password') : ''}
+      <button class="btn" type="submit">Logga in</button>
+    </div>
+    ${online() ? '<label class="check"><input type="checkbox" id="remember"> Håll mig inloggad på den här enheten</label>' : ''}
+    ${errBox()}
+  </form>
+  <div class="row"><button class="link" data-act="newform">Ny spelare? Skapa ett konto</button></div>
+  ${online() ? '<p class="muted small">Glömt lösenordet? Be din lärare eller en vuxen att ge dig ett nytt.</p>' : ''}
+</section>`;
+    } else {
+      panel = `<section class="panel">
+  <h2>Ny spelare</h2>
+  <form id="newform" class="newkid" autocomplete="off" style="border:0;padding:0">
+    <div class="row">
+      <label class="fld"><span>Smeknamn</span><input id="pname" maxlength="16" required placeholder="t.ex. Blockkungen" autocomplete="username" autofocus></label>
+      <label class="fld" style="flex:0 1 130px"><span>Årskurs</span><select id="pgrade">${[3, 4, 5, 6].map((g) => `<option value="${g}"${g === 4 ? ' selected' : ''}>åk ${g}</option>`).join('')}</select></label>
+    </div>
+    ${online() ? `<div class="row">${pwField('pw1', 'Lösenord (minst 4 tecken)', 'new-password')}${pwField('pw2', 'Skriv lösenordet igen', 'new-password')}</div>
+    <label class="check"><input type="checkbox" id="remember"> Håll mig inloggad på den här enheten</label>` : ''}
+    <button class="btn" type="submit" style="align-self:flex-start">Skapa och börja spela</button>
+    ${errBox()}
+  </form>
+  <p class="muted small">Skriv ett påhittat smeknamn, inte ditt riktiga namn. Smeknamnet syns på topplistan.${online() ? ' Kom ihåg ditt lösenord.' : ''}</p>
+  <button class="link" data-act="loginform">Har du redan ett konto? Logga in</button>
+</section>`;
+    }
     view(`
 <header class="hero">
   ${mossaSVG(false, 'big')}
@@ -1720,68 +1868,66 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
     <div><button class="btn ghost" data-act="board">Se topplistan</button></div>
   </div>
 </header>
-${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
-  <h2>Fortsätt spela</h2>
-  <div class="kid-list">${list.map((p) => `<button class="btn kid" data-act="cont" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('')}</div>
-  <div class="row"><button class="link" data-act="newform">Ny spelare</button><button class="link" data-act="codeform">Jag har en spelkod</button></div>
-</section>` : mode === 'code' ? `<section class="panel">
-  <h2>Fortsätt med spelkod</h2>
-  <p class="muted">Spelkoden finns under <b>Min spelkod</b> på den enhet där du spelade förut.</p>
-  <form id="codeform" class="row" autocomplete="off">
-    <label class="fld"><span>Spelkod</span><input id="code" required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false" autocapitalize="off"></label>
-    <button class="btn" type="submit">Fortsätt</button>
-  </form>
-  <button class="link" data-act="start">Tillbaka</button>
-</section>` : `<section class="panel">
-  <h2>Ny spelare</h2>
-  <form id="newform" class="newkid" autocomplete="off" style="border:0;padding:0">
-    <div class="row">
-      <label class="fld"><span>Smeknamn</span><input id="pname" maxlength="16" required placeholder="t.ex. Blockkungen" autofocus></label>
-      <label class="fld" style="flex:0 1 130px"><span>Årskurs</span><select id="pgrade">${[3, 4, 5, 6].map((g) => `<option value="${g}"${g === 4 ? ' selected' : ''}>åk ${g}</option>`).join('')}</select></label>
-      <button class="btn" type="submit">Börja spela</button>
-    </div>
-    <p id="nameerr" class="small" style="color:var(--soft)" hidden></p>
-  </form>
-  <p class="muted small">Skriv ett påhittat smeknamn, inte ditt riktiga namn. Smeknamnet syns på topplistan.</p>
-  ${list.length ? '<button class="link" data-act="start">Tillbaka</button>' : '<button class="link" data-act="codeform">Jag har en spelkod</button>'}
-</section>`}
-<footer class="foot"><span class="muted small">${store.mode === 'online' ? 'Vi sparar bara ditt smeknamn, din årskurs, dina poäng och dina framsteg i spelet.' : 'Spelet sparas bara i den här webbläsaren.'}</span></footer>`);
-    const nf = document.getElementById('newform');
-    if (nf) nf.addEventListener('submit', (e) => {
+${panel}
+<footer class="foot"><span class="muted small">${online() ? 'Vi sparar bara ditt smeknamn, ditt lösenord (krypterat), din årskurs, dina poäng och dina framsteg i spelet. Hur många som svarar rätt och fel på olika uppgifter sparas utan namn.' : 'Spelet sparas bara i den här webbläsaren.'}</span><a class="link" href="larare.html">För lärare</a></footer>`);
+
+    const f = document.getElementById('loginform') || document.getElementById('newform') || document.getElementById('claimform');
+    if (!f) return;
+    f.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = document.getElementById('pname').value.trim().replace(/\s+/g, ' ');
-      const err = nameProblem(name), el = document.getElementById('nameerr');
-      if (err) { el.textContent = err; el.hidden = false; return; }
-      play({ id: uuid(), name, grade: Number(document.getElementById('pgrade').value) });
-    });
-    const cf = document.getElementById('codeform');
-    if (cf) cf.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const code = document.getElementById('code').value.trim().toLowerCase();
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(code)) { toast('Spelkoden ser inte rätt ut. Den har 36 tecken med bindestreck.', 'note'); return; }
+      const remember = !!(document.getElementById('remember') || {}).checked;
+      busyBtn(f, true);
       try {
-        const pr = await store.lookup(code);
-        if (!pr) { toast('Hittade ingen spelare med den koden.', 'note'); return; }
-        play(pr);
-      } catch (err) { toast('Kunde inte nå servern. Försök igen om en stund.', 'note'); }
+        if (f.id === 'loginform') {
+          const pr = await store.login(document.getElementById('lname').value.trim(), online() ? document.getElementById('lpw').value : '');
+          play(pr, remember);
+        } else if (f.id === 'newform') {
+          const name = document.getElementById('pname').value.trim().replace(/\s+/g, ' ');
+          const err = nameProblem(name); if (err) throw Object.assign(new Error(err), { text: err });
+          if (online()) {
+            const a = document.getElementById('pw1').value, b = document.getElementById('pw2').value;
+            if (a.length < 4) throw Object.assign(new Error(), { code: 'weak_password' });
+            if (a !== b) throw Object.assign(new Error(), { text: 'Lösenorden är inte likadana.' });
+            const pr = await store.register(name, a, Number(document.getElementById('pgrade').value));
+            play(pr, remember);
+          } else {
+            if (store.localProfiles().some((p) => p.name.toLowerCase() === name.toLowerCase())) throw Object.assign(new Error(), { code: 'name_taken' });
+            const pr = await store.register(name, '', Number(document.getElementById('pgrade').value));
+            store.saveLocalProfile(pr);
+            play(pr, false);
+          }
+        } else {
+          const lp = store.legacyProfiles()[0];
+          const a = document.getElementById('pw1').value, b = document.getElementById('pw2').value;
+          if (a.length < 4) throw Object.assign(new Error(), { code: 'weak_password' });
+          if (a !== b) throw Object.assign(new Error(), { text: 'Lösenorden är inte likadana.' });
+          const pr = await store.claim(lp.id, a);
+          store.markMigrated(lp.id);
+          play(pr, false);
+        }
+      } catch (err) {
+        showErr(err.text || window.KGPublicStore.message(err.code));
+        busyBtn(f, false);
+      }
     });
   }
 
-  function play(pr) {
-    profile = { id: pr.id, name: pr.name, grade: pr.grade || 4 };
+  async function play(pr, remember) {
+    profile = { id: pr.id, name: pr.name, grade: pr.grade || 4, token: pr.token || null };
     store.profile = profile;
-    store.saveProfile(profile);
-    game.open({ id: profile.id, familyId: 'public', name: profile.name, grade: profile.grade }, null);
+    if (online()) store.rememberSession(profile, remember);
+    try {
+      await game.open({ id: profile.id, familyId: 'public', name: profile.name, grade: profile.grade }, null);
+    } catch (e) { /* utloggad: hanteras av onLoggedOut */ }
   }
 
   /* ---------- topplista ---------- */
   async function showBoard() {
     const tabs = [['week', 'Veckans poäng'], ['race', 'Vagnrace'], ['total', 'All-time']];
     const back = game.getPlayer() ? '<button class="link" data-g="hub">Tillbaka</button>' : '<button class="link" data-act="start">Tillbaka</button>';
-    view(`
-<header class="subhead">${back}<h2>Topplista</h2></header>
-<div class="chips">${tabs.map(([id, n]) => `<button class="chip${boardKind === id ? ' on' : ''}" data-act="btab" data-id="${id}">${n}</button>`).join('')}</div>
-<section class="panel"><p class="muted">Hämtar…</p></section>`);
+    const head = `<header class="subhead">${back}<h2>Topplista</h2></header>
+<div class="chips">${tabs.map(([id, n]) => `<button class="chip${boardKind === id ? ' on' : ''}" data-act="btab" data-id="${id}">${n}</button>`).join('')}</div>`;
+    view(head + '<section class="panel"><p class="muted">Hämtar…</p></section>');
     const p = game.getPlayer();
     try { await store.flush(); } catch (e) { /* ingen fara */ }
     let rows = [];
@@ -1790,48 +1936,53 @@ ${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
     const body = rows === null ? '<p>Kunde inte hämta topplistan just nu. Försök igen om en stund.</p>'
       : !rows.length ? '<p class="muted">Ingen har poäng här än. Bli först!</p>'
       : `<ol class="board">${rows.map((r) => `<li class="${r.me ? 'me' : ''}${r.rank <= 3 ? ' top' + r.rank : ''}"><span class="b-rank">${r.rank}</span><span class="b-name">${esc(r.name)}${r.me ? ' <small>(du)</small>' : ''}</span><span class="b-score">${r.score}</span></li>`).join('')}</ol>`;
-    view(`
-<header class="subhead">${back}<h2>Topplista</h2></header>
-<div class="chips">${tabs.map(([id, n]) => `<button class="chip${boardKind === id ? ' on' : ''}" data-act="btab" data-id="${id}">${n}</button>`).join('')}</div>
-<section class="panel">${body}<p class="muted small">${note}${store.mode === 'online' ? '' : ' Topplistan visar bara spelare på den här enheten.'}</p></section>`);
+    view(head + `<section class="panel">${body}<p class="muted small">${note}${online() ? '' : ' Topplistan visar bara spelare på den här enheten.'}</p></section>`);
   }
 
-  /* ---------- spelkod ---------- */
-  function showCode() {
+  /* ---------- mitt konto ---------- */
+  function showAccount() {
     view(`
-<header class="subhead"><button class="link" data-g="hub">Tillbaka</button><h2>Min spelkod</h2></header>
+<header class="subhead"><button class="link" data-g="hub">Tillbaka</button><h2>Mitt konto</h2></header>
 <section class="panel">
-  <p>Med spelkoden kan du fortsätta spela på en annan dator eller surfplatta. Håll den hemlig, ungefär som ett lösenord.</p>
-  <p class="codebox" id="codetxt">${esc(profile.id)}</p>
-  <div class="actions"><button class="btn ghost" data-act="copy">Kopiera</button></div>
-  ${store.mode === 'online' ? '' : '<p class="muted small">Spelet körs bara lokalt, så koden fungerar bara på den här enheten.</p>'}
+  <p>Du är inloggad som <b>${esc(profile.name)}</b> (åk ${esc(profile.grade)}).</p>
+  <div class="actions"><button class="btn ghost" data-act="home">Logga ut</button></div>
 </section>
+${online() ? `<section class="panel">
+  <h3>Byt lösenord</h3>
+  <form id="pwform" class="newkid" autocomplete="off" style="border:0;padding:0">
+    <div class="row">${pwField('opw', 'Nuvarande lösenord', 'current-password')}${pwField('npw', 'Nytt lösenord', 'new-password')}<button class="btn" type="submit">Byt</button></div>
+    ${errBox()}
+  </form>
+</section>` : ''}
 <section class="panel">
   <h3>Radera mig</h3>
   <p class="muted small">Tar bort ditt smeknamn, dina poäng och allt du samlat. Det går inte att ångra.</p>
   ${confirmDelete ? '<div class="actions"><button class="btn" style="background:var(--soft)" data-act="delyes">Ja, radera allt</button><button class="btn ghost" data-act="delno">Avbryt</button></div>' : '<button class="btn ghost" data-act="delask">Radera mig</button>'}
 </section>`);
+    const f = document.getElementById('pwform');
+    if (f) f.addEventListener('submit', async (e) => {
+      e.preventDefault(); busyBtn(f, true);
+      try { await store.changePassword(document.getElementById('opw').value, document.getElementById('npw').value); toast('Lösenordet är bytt.', 'good'); showAccount(); }
+      catch (err) { showErr(window.KGPublicStore.message(err.code)); busyBtn(f, false); }
+    });
   }
 
   /* ---------- händelser ---------- */
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const act = b.dataset.act;
-    if (act === 'home' || act === 'start') showStart();
+    if (act === 'home') { if (game) game.reset(); await store.logout(); profile = null; showStart('login'); }
+    else if (act === 'start') showStart();
     else if (act === 'newform') showStart('new');
-    else if (act === 'codeform') showStart('code');
-    else if (act === 'cont') { const pr = store.profiles().find((p) => p.id === b.dataset.id); if (pr) play(pr); }
+    else if (act === 'loginform') showStart('login');
+    else if (act === 'skipclaim') { store.markMigrated(b.dataset.id); showStart('login'); }
     else if (act === 'board') showBoard();
     else if (act === 'btab') { boardKind = b.dataset.id; showBoard(); }
-    else if (act === 'code') { confirmDelete = false; showCode(); }
-    else if (act === 'copy') {
-      try { await navigator.clipboard.writeText(profile.id); toast('Kopierat', 'good'); }
-      catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById('codetxt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Markerat. Kopiera med Cmd+C eller Ctrl+C.', 'note'); }
-    }
-    else if (act === 'delask') { confirmDelete = true; showCode(); }
-    else if (act === 'delno') { confirmDelete = false; showCode(); }
+    else if (act === 'code') { confirmDelete = false; showAccount(); }
+    else if (act === 'delask') { confirmDelete = true; showAccount(); }
+    else if (act === 'delno') { confirmDelete = false; showAccount(); }
     else if (act === 'delyes') {
-      try { await store.deletePlayer(profile.id); toast('Allt är raderat.', 'good'); showStart(); }
+      try { if (game) game.reset(); await store.deletePlayer(); profile = null; toast('Allt är raderat.', 'good'); showStart('new'); }
       catch (err) { toast('Kunde inte radera just nu. Försök igen om en stund.', 'note'); }
     }
   });
@@ -1841,12 +1992,16 @@ ${list.length && mode !== 'new' && mode !== 'code' ? `<section class="panel">
     store, view, toast, esc, richText, gemSVG, mossaSVG, shade, publicMode: true,
     openTest: () => {}, rerenderParent: () => {},
     onPoints: (p, n) => { p.pts = p.pts || { pending: 0, week: 0, total: 0, race: 0 }; p.pts.pending += n; },
+    onAnswer: (q, ok, given) => {
+      if (!online()) return;
+      store.addAnswer({ area: q.area, skill: q.skill || '', level: q.level, ok, q: window.KGQ.plain(q.text), given: ok ? '' : String(given).slice(0, 40), correct: ok ? '' : window.KGQ.answerText(q) });
+    },
   });
-  store.onStatus = (s) => {
-    if (s === 'offline') toast('Kunde inte nå servern. Spelet sparas på enheten så länge.', 'note');
-    if (s === 'badname') toast('Servern godkände inte smeknamnet. Byt spelare och välj ett annat.', 'note');
-  };
-  showStart();
+  store.onStatus = (s) => { if (s === 'offline') toast('Kunde inte nå servern. Spelet sparas på enheten så länge.', 'note'); };
+  store.onLoggedOut = () => { if (game) game.reset(); profile = null; toast('Du har blivit utloggad. Logga in igen.', 'note'); showStart('login'); };
+  const saved = online() ? store.savedSession() : null;
+  if (saved && saved.token) play(saved, !!(function () { try { return localStorage.getItem('kristallgruvan.session'); } catch (e) { return null; } })());
+  else showStart();
 })();
 
 </script>
