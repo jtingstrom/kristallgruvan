@@ -338,6 +338,17 @@ details.skill summary { display: flex; flex-wrap: wrap; align-items: baseline; g
 .sk-p { margin-left: auto; font-family: var(--f-display); color: var(--gold); }
 .sk-n { min-width: 5.5em; text-align: right; }
 @media (max-width: 520px) { .hbar { grid-template-columns: 1fr 3.4em; } .hb-l { grid-column: 1 / 3; } .hb-track { grid-column: 1; } .hb-n { grid-column: 1 / 3; } }
+.info { max-width: 780px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 64px; display: flex; flex-direction: column; gap: 18px; }
+.info .panel p { max-width: 65ch; }
+.info table { min-width: 0; }
+a.btn { text-decoration: none; display: inline-block; }
+.steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
+.steps li::marker { font-family: var(--f-display); color: var(--gold); }
+.areas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.areas li { background: var(--rock-2); border: 2px solid var(--edge); border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: .95rem; }
+.checks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.checks li { position: relative; padding-left: 26px; }
+.checks li::before { content: ""; position: absolute; left: 4px; top: .45em; width: 10px; height: 10px; background: var(--moss); box-shadow: 0 0 0 2px var(--edge); }
 .codebox { font-family: ui-monospace, Menlo, monospace; font-size: 1rem; background: var(--well); border: 3px solid var(--edge); border-radius: 4px; padding: 12px 14px; overflow-wrap: anywhere; user-select: all; }
 </style>
 </head>
@@ -1873,7 +1884,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
     <p class="eyebrow">Ett mattespel för åk 3–6</p>
     <h1>Kristallgruvan</h1>
     <p class="lead">Mossa sover djupt nere i gruvan. Lös matteuppdrag, samla kristaller, kläck egna varelser och bygg din bas. Klättra på topplistan!</p>
-    <div><button class="btn ghost" data-act="board">Se topplistan</button></div>
+    <div class="row"><button class="btn ghost" data-act="board">Se topplistan</button><a class="btn ghost" href="foraldrar.html">För föräldrar</a></div>
   </div>
 </header>
 ${panel}
