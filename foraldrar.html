@@ -342,6 +342,10 @@ details.skill summary { display: flex; flex-wrap: wrap; align-items: baseline; g
 .info .panel p { max-width: 65ch; }
 .info table { min-width: 0; }
 a.btn { text-decoration: none; display: inline-block; }
+.btn { line-height: 1.25; text-align: center; }
+.herobtns { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: 12px; }
+.herobtns .btn { width: 100%; }
+@media (max-width: 360px) { .herobtns { grid-template-columns: 1fr; } }
 .steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
 .steps li::marker { font-family: var(--f-display); color: var(--gold); }
 .areas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -451,7 +455,7 @@ a.btn { text-decoration: none; display: inline-block; }
 
 <section class="panel">
   <h2>Kontakt</h2>
-  <p>Kristallgruvan är ett hobbyprojekt av Jan Tingstrom, gjort tillsammans med sonen Julius. Hör gärna av dig med frågor eller synpunkter.</p>
+  <p>Kristallgruvan är ett hobbyprojekt av Jan Tingstrom, gjort tillsammans med sonen. Hör gärna av dig med frågor eller synpunkter.</p>
   <p>E-post: <a class="maillink" href="mailto:info@tingstrom.se">info@tingstrom.se</a></p>
 </section>
 
