@@ -342,6 +342,10 @@ details.skill summary { display: flex; flex-wrap: wrap; align-items: baseline; g
 .info .panel p { max-width: 65ch; }
 .info table { min-width: 0; }
 a.btn { text-decoration: none; display: inline-block; }
+.btn { line-height: 1.25; text-align: center; }
+.herobtns { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: 12px; }
+.herobtns .btn { width: 100%; }
+@media (max-width: 360px) { .herobtns { grid-template-columns: 1fr; } }
 .steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
 .steps li::marker { font-family: var(--f-display); color: var(--gold); }
 .areas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -349,6 +353,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .checks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .checks li { position: relative; padding-left: 26px; }
 .checks li::before { content: ""; position: absolute; left: 4px; top: .45em; width: 10px; height: 10px; background: var(--moss); box-shadow: 0 0 0 2px var(--edge); }
+.maillink { color: var(--amethyst); font-weight: 800; }
 .codebox { font-family: ui-monospace, Menlo, monospace; font-size: 1rem; background: var(--well); border: 3px solid var(--edge); border-radius: 4px; padding: 12px 14px; overflow-wrap: anywhere; user-select: all; }
 </style>
 </head>
@@ -1884,7 +1889,7 @@ ${R.mode === 'boss' ? `<section class="bossbar">${creatureSVG({ seed: 777, area:
     <p class="eyebrow">Ett mattespel för åk 3–6</p>
     <h1>Kristallgruvan</h1>
     <p class="lead">Mossa sover djupt nere i gruvan. Lös matteuppdrag, samla kristaller, kläck egna varelser och bygg din bas. Klättra på topplistan!</p>
-    <div class="row"><button class="btn ghost" data-act="board">Se topplistan</button><a class="btn ghost" href="foraldrar.html">För föräldrar</a></div>
+    <div class="herobtns"><button class="btn ghost" data-act="board">Se topplistan</button><a class="btn ghost" href="foraldrar.html">För föräldrar</a></div>
   </div>
 </header>
 ${panel}
